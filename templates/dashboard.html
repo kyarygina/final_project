@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Организация футбольного матча</h1>
+
+<div class="top-dashboard">
+
+    <!-- ПОГОДА -->
+    <section class="dashboard-section weather-small-card">
+        <h2>Погода в Саратове</h2>
+
+        <div class="weather-current">
+            <div class="weather-icon">{{ weather.icon }}</div>
+
+            <div>
+                <h3>{{ weather.date }}</h3>
+                <p>
+                    Прогноз на вечер:
+                    {{ weather.temp_evening }}
+                    {% if weather.temp_evening != "нет данных" %} °C{% endif %}
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ГОЛОСОВАНИЕ -->
+    <section class="dashboard-section vote-card">
+        <h2>Голосование</h2>
+
+        {% if not active_poll %}
+            <button onclick="openPollDialog()">Создать голосование</button>
+
+            <dialog id="pollDialog" class="poll-dialog">
+                <h3>Создать голосование</h3>
+
+                <label>Дата матча</label>
+                <input type="date" id="newPollDate" min="{{ today }}" value="{{ today }}">
+
+                <div class="vote-actions">
+                    <button onclick="createPoll()">Создать</button>
+                    <button onclick="closePollDialog()" class="danger-button">Отмена</button>
+                </div>
+            </dialog>
+
+        {% else %}
+            <p class="poll-date">
+                Дата матча: <strong>{{ active_poll.match_date }}</strong>
+            </p>
+
+            <div class="vote-actions">
+                <button onclick="voteActive('playing')">Играю</button>
+                <button onclick="voteActive('not_playing')" class="danger-button">Не играю</button>
+            </div>
+
+            <div class="poll-results">
+                <h3>Результаты голосования</h3>
+
+                <p><strong>Играют:</strong> {{ votes_playing | length }}</p>
+                <ul>
+                    {% for vote in votes_playing %}
+                        <li>{{ vote.user.last_name }} {{ vote.user.first_name }}</li>
+                    {% endfor %}
+                </ul>
+
+                <p><strong>Не играют:</strong> {{ votes_not_playing | length }}</p>
+                <ul>
+                    {% for vote in votes_not_playing %}
+                        <li>{{ vote.user.last_name }} {{ vote.user.first_name }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="vote-actions">
+                <button onclick="splitActiveTeams()">Разделить на команды</button>
+                <button onclick="finishActivePoll()" class="danger-button">Завершить голосование</button>
+            </div>
+
+            <div id="teamsResult" class="teams-result">
+    {% if team_result %}
+        <div class="teams">
+            <div class="team-card">
+                <h3>Команда 1</h3>
+                <ul>
+                    {% for player in team_result.team_a.split(", ") %}
+                        <li>{{ player }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="team-card">
+                <h3>Команда 2</h3>
+                <ul>
+                    {% for player in team_result.team_b.split(", ") %}
+                        <li>{{ player }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+</div>
+        {% endif %}
+
+        <p id="voteMessage"></p>
+    </section>
+</div>
+
+<!-- ПЛОЩАДКИ -->
+<section class="dashboard-section fields-section">
+    <div class="section-header">
+        <h2>Футбольные площадки</h2>
+        <button onclick="openFieldDialog()">Добавить площадку</button>
+    </div>
+
+    <!-- МОДАЛКА -->
+    <dialog id="fieldDialog" class="field-dialog">
+        <h3>Добавить площадку</h3>
+
+        <form method="POST" action="{{ url_for('add_field') }}" enctype="multipart/form-data">
+            <label>Название</label>
+            <input type="text" name="name" required>
+
+            <label>Фото</label>
+            <input type="file" name="photo">
+
+            <label>Тип</label>
+            <input type="text" name="field_type" required>
+
+            <label>Адрес</label>
+            <input type="text" name="address" required>
+
+            <label>Стоимость</label>
+            <input type="text" name="price" required>
+
+            <label>Телефон</label>
+            <input type="text" name="phone" required>
+
+            <div class="vote-actions">
+                <button type="submit">Добавить</button>
+                <button type="button" onclick="closeFieldDialog()" class="danger-button">Отмена</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="editFieldDialog" class="field-dialog">
+    <h3>Редактировать площадку</h3>
+
+    <form id="editFieldForm" method="POST" enctype="multipart/form-data">
+        <label>Название</label>
+        <input type="text" name="name" id="editFieldName" required>
+
+        <label>Новое фото</label>
+        <input type="file" name="photo">
+
+        <label>Тип</label>
+        <input type="text" name="field_type" id="editFieldType" required>
+
+        <label>Адрес</label>
+        <input type="text" name="address" id="editFieldAddress" required>
+
+        <label>Стоимость</label>
+        <input type="text" name="price" id="editFieldPrice" required>
+
+        <label>Телефон</label>
+        <input type="text" name="phone" id="editFieldPhone" required>
+
+        <div class="vote-actions">
+            <button type="submit">Сохранить</button>
+            <button type="button" onclick="closeEditFieldDialog()" class="danger-button">Отмена</button>
+        </div>
+    </form>
+</dialog>
+
+    <table>
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Название</th>
+                <th>Фото</th>
+                <th>Тип</th>
+                <th>Адрес</th>
+                <th>Стоимость</th>
+                <th>Телефон</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for field in fields %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ field.name }}</td>
+                    <td>
+                        {% if field.photo %}
+                            <img class="field-photo" src="{{ url_for('static', filename='uploads/' + field.photo) }}">
+                        {% else %}
+                            Нет фото
+                        {% endif %}
+                    </td>
+                    <td>{{ field.field_type }}</td>
+                    <td>{{ field.address }}</td>
+                    <td>{{ field.price }}</td>
+                    <td>{{ field.phone }}</td>
+                    <td>
+                        <button type="button"
+        onclick="openEditFieldDialog(
+            '{{ field.id }}',
+            '{{ field.name }}',
+            '{{ field.field_type }}',
+            '{{ field.address }}',
+            '{{ field.price }}',
+            '{{ field.phone }}'
+        )">
+    Редактировать
+</button>
+
+                        <form method="POST"
+                              action="{{ url_for('delete_field', field_id=field.id) }}"
+                              class="inline-form">
+                            <button type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if not fields %}
+        <p>Площадки пока не добавлены.</p>
+    {% endif %}
+</section>
+
+<!-- JS -->
+<script>
+function setMessage(text) {
+    document.getElementById("voteMessage").textContent = text;
+}
+
+/* ===== ГОЛОСОВАНИЕ ===== */
+
+function openPollDialog() {
+    document.getElementById("pollDialog").showModal();
+}
+
+function closePollDialog() {
+    document.getElementById("pollDialog").close();
+}
+
+async function createPoll() {
+    const date = document.getElementById("newPollDate").value;
+
+    const res = await fetch("/api/create-active-poll", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({date})
+    });
+
+    const data = await res.json();
+
+    if (data.success) location.reload();
+    else setMessage(data.error);
+}
+
+async function voteActive(answer) {
+    const res = await fetch("/api/vote-active", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({answer})
+    });
+
+    const data = await res.json();
+
+    if (data.success) location.reload();
+    else setMessage(data.error);
+}
+
+async function splitActiveTeams() {
+    const res = await fetch("/api/split-active-teams", {method: "POST"});
+    const data = await res.json();
+
+    if (data.error) return setMessage(data.error);
+
+    document.getElementById("teamsResult").innerHTML = `
+        <div class="teams">
+            <div class="team-card">
+                <h3>Команда 1</h3>
+                <ul>${data.team_a.map(p => `<li>${p}</li>`).join("")}</ul>
+            </div>
+            <div class="team-card">
+                <h3>Команда 2</h3>
+                <ul>${data.team_b.map(p => `<li>${p}</li>`).join("")}</ul>
+            </div>
+        </div>
+    `;
+}
+
+async function finishActivePoll() {
+    await fetch("/api/finish-active-poll", {method: "POST"});
+    location.reload();
+}
+
+/* ===== ПЛОЩАДКИ ===== */
+
+function openFieldDialog() {
+    document.getElementById("fieldDialog").showModal();
+}
+
+function closeFieldDialog() {
+    document.getElementById("fieldDialog").close();
+}
+    function openEditFieldDialog(id, name, fieldType, address, price, phone) {
+    const form = document.getElementById("editFieldForm");
+
+    form.action = `/F/edit/${id}`;
+
+    document.getElementById("editFieldName").value = name;
+    document.getElementById("editFieldType").value = fieldType;
+    document.getElementById("editFieldAddress").value = address;
+    document.getElementById("editFieldPrice").value = price;
+    document.getElementById("editFieldPhone").value = phone;
+
+    document.getElementById("editFieldDialog").showModal();
+}
+
+function closeEditFieldDialog() {
+    document.getElementById("editFieldDialog").close();
+}
+</script>
+
+{% endblock %}
