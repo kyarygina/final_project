@@ -170,59 +170,48 @@
     </form>
 </dialog>
 
-    <table>
-        <thead>
-            <tr>
-                <th>№</th>
-                <th>Название</th>
-                <th>Фото</th>
-                <th>Тип</th>
-                <th>Адрес</th>
-                <th>Стоимость</th>
-                <th>Телефон</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
+<div class="fields-list">
+    {% for field in fields %}
+        <div class="field-card">
+            <div class="field-card-photo">
+                {% if field.photo %}
+                    <img src="{{ url_for('static', filename='uploads/' + field.photo) }}" alt="Фото площадки">
+                {% else %}
+                    <div class="no-photo">Нет фото</div>
+                {% endif %}
+            </div>
 
-        <tbody>
-            {% for field in fields %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td>{{ field.name }}</td>
-                    <td>
-                        {% if field.photo %}
-                            <img class="field-photo" src="{{ url_for('static', filename='uploads/' + field.photo) }}">
-                        {% else %}
-                            Нет фото
-                        {% endif %}
-                    </td>
-                    <td>{{ field.field_type }}</td>
-                    <td>{{ field.address }}</td>
-                    <td>{{ field.price }}</td>
-                    <td>{{ field.phone }}</td>
-                    <td>
-                        <button type="button"
-        onclick="openEditFieldDialog(
-            '{{ field.id }}',
-            '{{ field.name }}',
-            '{{ field.field_type }}',
-            '{{ field.address }}',
-            '{{ field.price }}',
-            '{{ field.phone }}'
-        )">
-    Редактировать
-</button>
+            <div class="field-card-info">
+                <h3>{{ field.name }}</h3>
 
-                        <form method="POST"
-                              action="{{ url_for('delete_field', field_id=field.id) }}"
-                              class="inline-form">
-                            <button type="submit">Удалить</button>
-                        </form>
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                <p><strong>Тип:</strong> {{ field.field_type }}</p>
+                <p><strong>Адрес:</strong> {{ field.address }}</p>
+                <p><strong>Стоимость:</strong> {{ field.price }}</p>
+                <p><strong>Телефон:</strong> {{ field.phone }}</p>
+
+                <div class="field-card-actions">
+                    <button type="button"
+                            onclick="openEditFieldDialog(
+                                '{{ field.id }}',
+                                '{{ field.name }}',
+                                '{{ field.field_type }}',
+                                '{{ field.address }}',
+                                '{{ field.price }}',
+                                '{{ field.phone }}'
+                            )">
+                        Редактировать
+                    </button>
+
+                    <form method="POST"
+                          action="{{ url_for('delete_field', field_id=field.id) }}"
+                          class="inline-form">
+                        <button type="submit" class="danger-button">Удалить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
 
     {% if not fields %}
         <p>Площадки пока не добавлены.</p>
@@ -310,7 +299,7 @@ function closeFieldDialog() {
     function openEditFieldDialog(id, name, fieldType, address, price, phone) {
     const form = document.getElementById("editFieldForm");
 
-    form.action = `/F/edit/${id}`;
+    form.action = `/fields/edit/${id}`;
 
     document.getElementById("editFieldName").value = name;
     document.getElementById("editFieldType").value = fieldType;

@@ -9,11 +9,7 @@
 
 <header>
 <nav class="navbar">
-    <div class="nav-left">
-        {% if session.get("user_id") %}
-            <a href="{{ url_for('dashboard') }}">Кабинет</a>
-        {% endif %}
-    </div>
+    <div class="nav-left"></div>
 
     <div class="nav-right">
         {% if session.get("user_id") %}

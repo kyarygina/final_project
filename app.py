@@ -285,18 +285,6 @@ def edit_field(field_id):
 
     db.session.commit()
 
-    return redirect(url_for("dashboard"))@app.route("/fields/delete/<int:field_id>", methods=["POST"])
-def delete_field(field_id):
-    if not session.get("user_id"):
-        flash("Для удаления площадки необходимо войти в аккаунт.")
-        return redirect(url_for("login"))
-
-    field = FootballField.query.get_or_404(field_id)
-
-    db.session.delete(field)
-    db.session.commit()
-
-    flash("Площадка удалена.")
     return redirect(url_for("dashboard"))
 
 
@@ -367,6 +355,11 @@ def api_create_active_poll():
         return jsonify({"error": "unauthorized"}), 401
 
     selected_date = request.json["date"]
+
+    selected_date = request.json["date"]
+
+    if selected_date < date.today().isoformat():
+        return jsonify({"error": "Нельзя выбрать прошедшую дату."})
 
     existing_poll = Poll.query.order_by(Poll.id.desc()).first()
 
