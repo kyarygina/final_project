@@ -73,20 +73,25 @@ class TeamResult(db.Model):
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in app.config["ALLOWED_EXTENSIONS"]
 
+
 def is_valid_username(username):
     return bool(re.fullmatch(r"[A-Za-z0-9!@#$%^&*_\-+=?.]+", username))
+
 
 def is_valid_password(password):
     return bool(re.fullmatch(r"[A-Za-z0-9!@#$%^&*_\-+=?.]+", password))
 
+
 def is_valid_name(name):
     return bool(re.fullmatch(r"[A-Za-zА-Яа-яЁё]+", name))
+
 
 def login_required():
     if not session.get("user_id"):
         flash("Для доступа к этой странице необходимо войти в аккаунт.")
         return False
     return True
+
 
 def format_short_date(date_string):
     date_obj = datetime.strptime(date_string, "%Y-%m-%d")
@@ -473,7 +478,6 @@ def api_finish_active_poll():
     return jsonify({"success": True})
 
 
-
 @app.route("/fields/delete/<int:field_id>", methods=["POST"])
 def delete_field(field_id):
     if not login_required():
@@ -485,6 +489,7 @@ def delete_field(field_id):
     db.session.commit()
 
     return redirect(url_for("dashboard"))
+
 
 if __name__ == "__main__":
     with app.app_context():
