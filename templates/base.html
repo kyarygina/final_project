@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Football Match App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<header>
+    <nav class="navbar">
+        <div class="nav-left"></div>
+
+        <div class="nav-right">
+            {% if session.get("user_id") %}
+            <span>{{ session.get("username") }}</span>
+            <a href="{{ url_for('logout') }}">Выйти</a>
+            {% else %}
+            <a href="{{ url_for('login') }}">Вход</a>
+            <a href="{{ url_for('register') }}">Регистрация</a>
+            {% endif %}
+        </div>
+    </nav>
+</header>
+
+<main>
+    {% if request.endpoint in ['login', 'register'] %}
+    <a href="{{ url_for('index') }}" class="back-button">← На главную</a>
+    {% endif %}
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <p>{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>
