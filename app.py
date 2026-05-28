@@ -8,13 +8,32 @@ import requests
 from flask import jsonify
 from datetime import date, datetime
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "change_this_secret_key"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY")
+
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL",
+    "sqlite:///database.db"
+)
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["UPLOAD_FOLDER"] = "static/uploads"
-app.config["ALLOWED_EXTENSIONS"] = {"png", "jpg", "jpeg", "gif"}
+
+app.config["UPLOAD_FOLDER"] = os.getenv(
+    "UPLOAD_FOLDER",
+    "static/uploads"
+)
+
+app.config["ALLOWED_EXTENSIONS"] = set(
+    os.getenv(
+        "ALLOWED_EXTENSIONS",
+        "png,jpg,jpeg,gif"
+    ).split(",")
+)
 
 db = SQLAlchemy(app)
 
@@ -98,15 +117,28 @@ def format_short_date(date_string):
     return date_obj.strftime("%d.%m")
 
 
+# Коды погоды Open-Meteo:
+# https://open-meteo.com/en/docs
+
+CLEAR_WEATHER_CODES = [0, 1]  # ясно / преимущественно ясно
+CLOUDY_WEATHER_CODES = [2, 3, 45, 48]  # облачно / туман
+RAIN_WEATHER_CODES = [51, 53, 55, 61, 63, 65, 80, 81, 82]  # дождь
+SNOW_WEATHER_CODES = [71, 73, 75, 77, 85, 86]  # снег
+
+
 def get_weather_icon(weather_code):
-    if weather_code in [0, 1]:
+    if weather_code in CLEAR_WEATHER_CODES:
         return "☀️"
-    if weather_code in [2, 3, 45, 48]:
+
+    if weather_code in CLOUDY_WEATHER_CODES:
         return "☁️"
-    if weather_code in [51, 53, 55, 61, 63, 65, 80, 81, 82]:
+
+    if weather_code in RAIN_WEATHER_CODES:
         return "🌧️"
-    if weather_code in [71, 73, 75, 77, 85, 86]:
+
+    if weather_code in SNOW_WEATHER_CODES:
         return "❄️"
+
     return "🌤️"
 
 
